@@ -1,0 +1,87 @@
+- name: ⚡⚡⚡⚡⚡⚡⚡ DECOMMISIONER (Mark II) ⚡⚡⚡⚡⚡⚡⚡
+  hosts: all
+  connection: local
+  gather_facts: False
+
+  collections:
+     - paloaltonetworks.panos
+
+  vars_prompt:
+    name: "CONFIRMATION_REQUIRED"
+    prompt: "\n -------⚡DECOMMISIONER (Mark II)⚡------- \n
+             This is an Ansible Playbook developed to automate the process of cleaning up the  decommisioned IP addresses from Palo Alto Firewalls. \n
+             Product Version:  Mark II r1.0 \n
+             Developed by:     HCL Network Operations Team for TFS \n
+             ----------------------------------------- \n\n
+                    !!!!!!! <<<<<<< CAUTION >>>>>>> !!!!!!! \n\n
+             The DECOMMISIONER Playbook will wipe the Security Rules, Address Groups and Address Objects from the firewalls based on the list of Address Objects provided in the variable file. \n
+             Incorrect varible file may lead to production impact...!! \n
+             So, please ensure that the list of Address Objects provided in the variable file is validated thoroughly...\n\n
+    !!!!!!! <<<<<<< CAUTION >>>>>>> !!!!!!! \n\n
+             Typing 'yes' will summon the Playbook... Do you wish to proceed ? (yes/no)"
+    default: "no"
+    private: no
+
+  tasks:
+
+  - name: 🔃 INTIALIZING VARIABLES 🔃
+    include_vars: vars.yml
+    when: CONFIRMATION_REQUIRED | bool
+
+  - name: 📃 FETCHING THE LIST OF ADDRESS OBJECTS..... 
+    panos_object_facts:
+      provider: "{{ provider }}"
+      object_type: address
+      name_regex: '.*'
+    register: address_objs_output
+
+  - name: 📃 FILTERING ADDRESS OBJECTS FOR THE GIVEN INPUT.....
+    set_fact:
+      address_objs: "{{ address_objs | default([]) + [item.name] }}"
+    loop: "{{ address_objs_output.objects }}"
+    when: item.value in ip_addrs
+
+  - name: 🚀 SENDING DATA TO core1.yml FOR THE EXECUTION OF TASKS TO DELETE THE ADDRESS OBJECTS ⬆️
+    include_tasks: core1.yml
+    loop: '{{ address_objs }}'
+    loop_control:
+       loop_var: addrs
+
+  - name: 📃 FETCHING THE LIST OF ADDRESS GROUPS.....
+    panos_object_facts:
+       provider: '{{ provider }}'
+       object_type: 'address-group'
+       name_regex: '.*'
+    register: addrgrps1
+    when: CONFIRMATION_REQUIRED | bool
+
+  - name: 🚀 SENDING DATA TO core2.yml FOR THE EXECUTION OF TASKS TO DELETE THE ADDRESS GROUPS ⬆️
+    include_tasks: core2.yml
+    loop: '{{ addrgrps1.objects }}'
+    loop_control:
+       loop_var: emtag
+    when:
+      - emtag.static_value == []
+      - CONFIRMATION_REQUIRED | bool
+
+  - name: 📃 FETCHING THE LIST OF SECURITY RULES POST MAKING ALL THE CHANGES
+    panos_security_rule_facts:
+       provider: '{{ provider }}'
+       all_details: yes
+    register: secrules2
+    when: CONFIRMATION_REQUIRED | bool
+
+  - name: REMOVING SECURITY RULES THAT HAS EITHER SOURCE OR DESTINATION FIELD EMPTY ⚡
+    panos_security_rule:
+       provider: '{{ provider }}'
+       rule_name: '{{ item.rule_name }}'
+       state: 'absent'
+    loop: '{{ secrules2.rule_details }}'
+    loop_control:
+       label: '{{ item.rule_name }}'
+    when:
+       - (item.source_ip == []) or (item.destination_ip == [])
+       - CONFIRMATION_REQUIRED | bool
+
+  - debug:
+      msg: "Playbook execution has been completed 🤖"

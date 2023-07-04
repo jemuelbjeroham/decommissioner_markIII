@@ -1,0 +1,53 @@
+
+  - name: ⏩ FETCHING THE LIST OF SECURITY POLICIES 📃
+    panos_security_rule_facts:
+       provider: '{{ provider }}'
+       all_details: yes
+    register: secrules
+    when: CONFIRMATION_REQUIRED | bool
+
+  - name: ⏩ FETCHING THE LIST OF ADDRESS GROUPS 📃
+    panos_object_facts:
+       provider: '{{ provider }}'
+       object_type: 'address-group'
+       name_regex: '.*'
+    register: addrgrps
+    when: CONFIRMATION_REQUIRED | bool
+
+  - name: ⏩ REMOVING ADDRESS OBJECTS FROM SECURITY POLICIES ⚡
+    panos_security_rule:
+       provider: '{{ provider }}'
+       rule_name: '{{ item.rule_name }}'
+       source_ip: '{{ item.source_ip | difference([addrs]) }}'
+       destination_ip: '{{ item.destination_ip | difference([addrs]) }}'
+    loop: '{{ secrules.rule_details }}'
+    loop_control:
+       label: '{{ item.rule_name }}'
+    when:
+       - (addrs in item.source_ip) or (addrs in item.destination_ip)
+       - CONFIRMATION_REQUIRED | bool
+
+  - name: ⏩ REMOVING ADDRESS OBJECTS FROM ADDRESS GROUPS ⚡
+    panos_address_group:
+       provider: '{{ provider }}'
+       name: '{{ item.name }}'
+       description: '{{ item.description | default(omit, true) }}'
+       static_value: '{{ item.static_value | difference([addrs]) }}'
+       commit: false
+    loop: '{{ addrgrps.objects }}'
+    loop_control:
+       label: '{{ item.name }}'
+    when:
+      - item.static_value
+      - addrs in item.static_value
+      - CONFIRMATION_REQUIRED | bool
+
+  - name: ⏩ REMOVING THE ADDRESS OBJECTS ITSELF ⚡
+    panos_address_object:
+      provider: '{{ provider }}'
+      name: '{{ addrs }}'
+      state: 'absent'
+    when: CONFIRMATION_REQUIRED | bool
+
+  - debug:
+      msg: "The cleanup of '{{ addrs }}' has been completed"
