@@ -3,4 +3,3 @@
 usecases.tfs.toyota.com
 10.0.0.1
 usecase.toyotafinancial.com
-192.168.1.12
