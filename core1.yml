@@ -4,7 +4,7 @@
        provider: '{{ provider }}'
        all_details: yes
     register: secrules
-    when: CONFIRMATION_REQUIRED | bool
+    
 
   - name: ⏩ FETCHING THE LIST OF ADDRESS GROUPS 📃
     panos_object_facts:
@@ -12,7 +12,7 @@
        object_type: 'address-group'
        name_regex: '.*'
     register: addrgrps
-    when: CONFIRMATION_REQUIRED | bool
+    
 
   - name: ⏩ REMOVING ADDRESS OBJECTS FROM SECURITY POLICIES ⚡
     panos_security_rule:
@@ -25,7 +25,7 @@
        label: '{{ item.rule_name }}'
     when:
        - (addrs in item.source_ip) or (addrs in item.destination_ip)
-       - CONFIRMATION_REQUIRED | bool
+       
 
   - name: ⏩ REMOVING ADDRESS OBJECTS FROM ADDRESS GROUPS ⚡
     panos_address_group:
@@ -40,14 +40,14 @@
     when:
       - item.static_value
       - addrs in item.static_value
-      - CONFIRMATION_REQUIRED | bool
+      
 
   - name: ⏩ REMOVING THE ADDRESS OBJECTS ITSELF ⚡
     panos_address_object:
       provider: '{{ provider }}'
       name: '{{ addrs }}'
       state: 'absent'
-    when: CONFIRMATION_REQUIRED | bool
+    
 
   - debug:
       msg: "The cleanup of '{{ addrs }}' has been completed"
