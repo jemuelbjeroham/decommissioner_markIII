@@ -3,7 +3,7 @@
        provider: '{{ provider }}'
        all_details: yes
     register: secrules1
-    when: CONFIRMATION_REQUIRED | bool
+    
 
   - name: ⏩⏩ FETCHING THE LIST OF ADDRESS GROUPS AGAIN 📃
     panos_object_facts:
@@ -11,7 +11,7 @@
        object_type: 'address-group'
        name_regex: '.*'
     register: addrgrps2
-    when: CONFIRMATION_REQUIRED | bool
+    
 
   - name: ⏩⏩ REMOVING EMPTY ADDRESS GROUPS FROM ADDRESS GROUPS ⚡
     panos_address_group:
@@ -25,7 +25,7 @@
        label: '{{ item.name }}'
     when:
        - emtag.name in item.static_value
-       - CONFIRMATION_REQUIRED | bool
+       
 
   - name: ⏩⏩ REMOVING EMPTY ADDRESS GROUPS FROM SECURITY RULES ⚡
     panos_security_rule:
@@ -38,7 +38,7 @@
        label: '{{ item.rule_name }}'
     when:
        - (emtag.name in item.source_ip) or (emtag.name in item.destination_ip)
-       - CONFIRMATION_REQUIRED | bool
+       
 
   - name: ⏩⏩ REMOVING EMPTY ADDRESS GROUPS ⚡
     panos_address_group:
@@ -50,7 +50,7 @@
        label: '{{ emtag.name }}'
     when:
       - emtag.static_value == []
-      - CONFIRMATION_REQUIRED | bool
+      
 
   - debug:
       msg: "The cleanup of '{{ emtag.name }}' has been completed"
@@ -61,7 +61,7 @@
        object_type: 'address-group'
        name_regex: '.*'
     register: addrgrps1
-    when: CONFIRMATION_REQUIRED | bool
+    
 
   - include_tasks: core2.yml
     loop: '{{ addrgrps1.objects }}'
@@ -69,4 +69,4 @@
        loop_var: emtag
     when:
       - emtag.static_value == []
-      - CONFIRMATION_REQUIRED | bool
+      
