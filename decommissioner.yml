@@ -11,7 +11,9 @@
   - name: 🔃 INTIALIZING VARIABLES 🔃
     include_vars: vars.yml
     
-
+  - name: 🔒 ACQUIRING CREDENTIALS 🔑
+    include_vars: creds.yml
+    
   - name: 📃 FETCHING THE LIST OF ADDRESS OBJECTS..... 
     panos_object_facts:
       provider: "{{ provider }}"
