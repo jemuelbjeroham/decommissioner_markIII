@@ -1,8 +1,0 @@
-10.61.168.100
-10.61.168.100/32
-10.60.170.192
-10.60.170.192/32
-usecases.tfs.toyota.com
-10.0.0.1
-10.0.0.1/32
-usecase.toyotafinancial.com
